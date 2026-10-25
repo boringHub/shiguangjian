@@ -1,8 +1,23 @@
 # 星语塔罗 · 另一台设备的服务端修补交接
 
-更新：2026-10-23。用户已确认：先完成 App 本地功能，AI 服务端暂留空，之后在保存完整邮件源码的设备上补齐。本文是实施交接，不是部署完成报告。
+更新：2026-10-25。已在原开发设备找到完整邮件后端并补齐塔罗服务端实现。本文记录源码恢复、接入进度与后续验收，不代表线上 AI 已启用。
 
-## 当前结论与影响
+## 2026-10-25 接入进度
+
+- 独立 API 仓库为 `boringHub/external-api`，本机 `main` 的 `5ef9e44`、`d18556a`、`acccdaf` 三个提交此前没有推送，包含邮箱验证、分享、回执、反馈、邮件队列及 `0001`–`0007` 迁移。另一台设备拿到的 `ae580be` 确实是旧基线。
+- 2026-10-25 已将上述三个提交及塔罗接入提交 [`fa6b6a4`](https://github.com/boringHub/external-api/commit/fa6b6a4) 推送至 API 仓库 `main`。另一台设备应先拉取该版本；源码已同步不代表线上 Worker 已更新。
+- Cloudflare 只读核对：`notify-api` 当前版本 `b661043c-3573-478c-b736-160176d62087`，2026-10-18 由 Wrangler 上传；远程 `love` 已应用 `0001`–`0007`。部署元数据与迁移核对不能单独证明源码逐字节一致。
+- `services/notify-api/src/tarot/` 已实现三条签名接口、78 张受控中文牌义、六牌阵校验、OpenAI 兼容 Chat Completions 流适配、原子幂等/额度、加密恢复缓存、生成中 purge 和租约/定时清理。独立迁移为 `migrations-tarot/0001_create_tarot.sql`，不应用到原邮件库。
+- 后端 `npm run check`、91 项本地测试和 `wrangler deploy --dry-run` 通过，包括原有 61 项邮件/身份/分享/反馈测试；新增测试使用隔离 D1 和模拟供应商，不证明真实中转站及 Android 已可用。
+- App `npm test` 的 138 项测试及 `npm run build` 通过；本次 App 仅更新开发文档与未发布日志，没有构建或发布 APK。
+- `npm run deploy` 已改为要求已提交且同步 GitHub 的干净 `main`，把源码 SHA 写入 Worker 版本说明；远程迁移改为显式执行，避免再次只部署本机源码。
+- 当前没有创建生产 TAROT D1、执行远程迁移、替换线上 Worker 或发布 APK。中转站协议/地址、模型、价格、预算、开通设备及隐私政策仍待配置；App 与服务端保持默认关闭。恢复/清理在后端关闭生成后仍可用，但实际需要 TAROT 绑定。
+
+准确配置名和上线步骤以 API 仓库 `services/notify-api/TAROT.md` 为准。`TAROT_DAILY_BUDGET_MICROS` 以及输入/输出每百万 token 单价统一使用货币百万分之一，配置实际币种和价格版本；提示词版本固定于源码 `tarot-v1.0`。当前适配器只支持经验证的非推理文本模型及 OpenAI 兼容流协议，其他中转协议须先补适配。
+
+下文保留 2026-10-23 的问题分析与验收要求，其中“源码缺失 / 服务端未实施”描述的是当时另一台设备的状态。
+
+## 2026-10-23 历史结论与影响
 
 App 已具备本地抽牌、牌义、历史，以及尚未启用的 AI 客户端接口。调用链固定为 **App → 自有 API → 模型中转站**，模型标识、上游地址、密钥和预算只由服务器管理。暂不确定具体模型，不需要在 App 中填写 GPT、DeepSeek 等型号。
 
@@ -10,7 +25,7 @@ App 已具备本地抽牌、牌义、历史，以及尚未启用的 AI 客户端
 
 这说明目前拿到的源码不足以安全扩展线上 Worker，**不能由此断定之前采用了哪种部署方式**。从另一台设备的工作目录手动部署、存在未提交改动、使用另一分支或另一份仓库，都可能造成差异。源码没有提交本身不会让已经部署的服务立即停止，但会影响后续复现、修复和安全发布。
 
-本次没有改动或部署 `external-api`，没有运行远程 D1 迁移，也没有替换线上邮件服务。AI 关闭期间仍可完成全部本地仪式与记录；在线解读、服务器恢复缓存和服务器清理功能需要后续接入验收。
+2026-10-23 当次没有改动或部署 `external-api`，没有运行远程 D1 迁移，也没有替换线上邮件服务。AI 关闭期间仍可完成全部本地仪式与记录；在线解读、服务器恢复缓存和服务器清理功能需要后续接入验收。
 
 ## 一、先找到实际部署源码
 
@@ -46,9 +61,9 @@ App 已具备本地抽牌、牌义、历史，以及尚未启用的 AI 客户端
 
 完成源码对齐和这组回归后，再往同一个 API 的独立模块中增加塔罗。不得用早期 `index.ts` 替换完整服务。
 
-## 三、待补齐的塔罗接口
+## 三、塔罗接口与实施约束
 
-详细约束以 [API_AND_DATA.md](API_AND_DATA.md) 为准；App 已有实现见 [IMPLEMENTATION.md](IMPLEMENTATION.md)。服务端目前没有占位假实现。
+详细约束以 [API_AND_DATA.md](API_AND_DATA.md) 为准；App 实现见 [IMPLEMENTATION.md](IMPLEMENTATION.md)。2026-10-25 服务端已补齐本地实现，线上状态见本文开头。
 
 | 方法 | App 实际路径 | 行为 |
 | --- | --- | --- |
@@ -71,14 +86,20 @@ App 已具备本地抽牌、牌义、历史，以及尚未启用的 AI 客户端
 7. 先加密保存完整回复和完成状态，再发 `done`。恢复缓存只允许所属设备读取，24 小时内有效；请求元数据与 purge tombstone 按契约保留，不记录问题和聊天正文日志。
 8. purge 先写 tombstone，阻止仍在生成的任务晚到后重建缓存。定时清理过期密文；隐私说明需包含实际备份/Time Travel 和中转站留存政策。
 
-建议的服务端配置名称（全部先留空或关闭，不表示已可用）：
+实际服务端配置名称（全部先留空或关闭，不表示已可用；完整模板见 API 的 `.dev.vars.example`）：
 
 ```dotenv
 TAROT_AI_ENABLED=false
 TAROT_PROVIDER=
 TAROT_MODEL=
-TAROT_PROMPT_VERSION=tarot-v1.0
-TAROT_DAILY_BUDGET=
+TAROT_DEVICE_ALLOWLIST=[]
+TAROT_PROVIDER_URL=
+TAROT_PROVIDER_ALLOWED_ORIGINS=[]
+TAROT_DAILY_BUDGET_MICROS=
+TAROT_INPUT_PRICE_MICROS_PER_MILLION=
+TAROT_OUTPUT_PRICE_MICROS_PER_MILLION=
+TAROT_PRICE_VERSION=
+TAROT_BUDGET_CURRENCY=
 # 上游基地址仅在服务端配置，并受 allowlist 限制。
 # 以下名称通过 Worker Secret 管理，不能在此填写真实值：
 # TAROT_PROVIDER_API_KEY
@@ -86,7 +107,7 @@ TAROT_DAILY_BUDGET=
 # TAROT_HMAC_KEY
 ```
 
-未配置模型、Secret、可承受预算或设备开通策略时必须 fail closed。最终变量名可随真实适配层确定，但模型 Key、缓存密钥和摘要密钥要各自独立。
+未配置模型、Secret、可承受预算或设备开通策略时必须 fail closed。提示词版本固定在受版本管理的源码中；模型 Key、缓存密钥和摘要密钥各自独立。
 
 ## 四、App 何时开启 AI
 
@@ -121,4 +142,4 @@ VITE_TAROT_AI_POLICY_URL=
 
 可直接复制以下任务：
 
-> 先读 diary-app/AGENTS.md、docs/tarot/SERVER_REPAIR_HANDOFF.md、IMPLEMENTATION.md 和 API_AND_DATA.md。当前 App 已完成本地星语塔罗及关闭的 AI 客户端，模型和密钥只放服务器，通过自有 API 转发到模型中转站。本机此前取得的 external-api 主分支 ae580be 缺少线上完整邮件功能，请先从这台设备找到真实部署源码、未提交改动、Wrangler 环境、D1 迁移及邮件队列配置，建立源码与线上版本的对应关系并补齐版本管理，不要用旧副本覆盖生产。先在隔离环境复现邮箱验证、日记分享、反馈及回执，再按文档实现三条塔罗路由、独立 TAROT D1、签名、SSE、原子幂等额度、加密恢复缓存与 purge tombstone。App 实际 deckId=rws-1909。模型先保持可配置，不猜测型号；密钥不写进 App 或 Git。保持 AI 默认关闭，完成并发、缓存、邮件回归和 Android 真机流式验收后再开启；任何生产部署另行按实际授权执行。
+> 先拉取 boringHub/shiguangjian 和 boringHub/external-api，再读两边 AGENTS.md、本文及 API 的 services/notify-api/TAROT.md。2026-10-25 已找回完整邮件源码并补齐塔罗签名 SSE、恢复、purge、独立迁移、原子幂等/额度及加密缓存，后端 91 项测试和类型检查通过；生产仍是旧 Worker，TAROT D1 和真实中转配置尚未创建。下一步核对实际网关协议、非推理模型、计费、预算、设备白名单与数据政策，在隔离环境验证供应商及邮件流程，再配置真实 TAROT D1/Secret。使用要求 main 已提交并同步 GitHub 的部署脚本，记录源码 SHA 与 Worker 版本。App deckId=rws-1909，默认关闭 AI；模型和密钥只在服务器配置。完成 Android 真机流式及内容验收后再启用；不重复实现现有模块，不把旧邮件源码覆盖生产。

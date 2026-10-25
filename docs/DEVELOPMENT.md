@@ -158,6 +158,14 @@ src/types/           领域类型
 android/             Capacitor Android 工程
 ```
 
+## 星语 AI 服务端接入
+
+塔罗复用原 `VITE_NOTIFY_API_ORIGIN` 与设备签名，服务端源码维护在独立仓库 `boringHub/external-api` 的 `services/notify-api`。2026-10-25 已在原设备找回此前未同步的完整邮件源码，并补齐塔罗 SSE、恢复、purge、独立 D1 迁移及本地测试；当前没有部署或开启线上 AI。
+
+完整邮件源码与本次接入已推送至 API 的 `main`（`fa6b6a4`），跨设备开发先同步两个独立仓库。App 的 138 项测试和生产构建、API 的 91 项测试与类型检查均通过，真实模型及 Android 网络验收另行执行。
+
+中转站/模型、密钥、价格与预算只放服务器；App 的 `VITE_TAROT_AI_ENABLED` 保持 `false`，真实接收数据的服务商名称与 HTTPS 政策链接确定、签名 Android 流式验收通过后才打开。具体进度见 [服务端修补交接](tarot/SERVER_REPAIR_HANDOFF.md)，配置与发布步骤见 API 仓库 `services/notify-api/TAROT.md`。API 发布脚本要求源码先提交并同步 GitHub，再记录部署版本对应的 SHA。
+
 ## 更多维护资料
 
 - [App 端开发设计](../App端开发设计文档.md)

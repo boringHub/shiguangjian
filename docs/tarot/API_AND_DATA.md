@@ -411,7 +411,9 @@ App 删除立即清本地；在线且该记录确实发过 AI 才请求 purge。
 
 ## 11. 配置与发布步骤
 
-Secrets：TAROT_PROVIDER_API_KEY、TAROT_CACHE_ENCRYPTION_KEYS、TAROT_HMAC_KEY。公开服务器配置：TAROT_AI_ENABLED、TAROT_PROVIDER、TAROT_MODEL、TAROT_PROMPT_VERSION、TAROT_DAILY_BUDGET、额度参数。提供商基地址只在服务器 allowlist 中选择，客户端不能传入。App 复用 VITE_NOTIFY_API_ORIGIN，不新增 VITE_* 模型密钥。
+2026-10-25 实施补充：API 源码已在独立 `external-api` 仓库恢复并完成本地接入；实际变量与操作以其 `services/notify-api/TAROT.md` 为准。独立迁移为 `migrations-tarot/0001_create_tarot.sql`，不进入邮件库的 `0001`–`0007` 历史。实际预算变量为 `TAROT_DAILY_BUDGET_MICROS`，输入/输出价格为 `TAROT_INPUT_PRICE_MICROS_PER_MILLION` / `TAROT_OUTPUT_PRICE_MICROS_PER_MILLION`，并需币种、价格版本、HTTPS 上游 URL/origin allowlist 与设备 allowlist。提示词版本来自受版本管理的源码，而非可任意覆写的环境变量。当前适配器为 OpenAI 兼容 Chat Completions 流，输入用 UTF-8 字节加消息开销保守估算，启用前须核对所选非推理模型的 tokenizer 与计费。生产 TAROT 资源、真实供应商及 Android 流式验收未完成，App 默认关闭。
+
+Secrets：TAROT_PROVIDER_API_KEY、TAROT_CACHE_ENCRYPTION_KEYS、TAROT_HMAC_KEY。服务器配置：TAROT_AI_ENABLED、TAROT_DEVICE_ALLOWLIST、TAROT_PROVIDER、TAROT_MODEL、TAROT_PROVIDER_URL、TAROT_PROVIDER_ALLOWED_ORIGINS、TAROT_DAILY_BUDGET_MICROS、TAROT_INPUT_PRICE_MICROS_PER_MILLION、TAROT_OUTPUT_PRICE_MICROS_PER_MILLION、TAROT_PRICE_VERSION、TAROT_BUDGET_CURRENCY。额度上限和提示词版本由源码管理。提供商地址只在服务器 allowlist 中选择，客户端不能传入。App 复用 VITE_NOTIFY_API_ORIGIN，不新增 VITE_* 模型密钥。
 
 1. 将实际生产邮件源码、D1 migration、Queue binding 与当前部署对应起来；先建立隔离的测试库与 Secret。
 2. 新增 TAROT D1 与迁移、定时清理；现有 EVENTS 与邮件消费者保持接口兼容。
