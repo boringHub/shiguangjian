@@ -21,6 +21,16 @@
 
 准确配置名和上线步骤以 API 仓库 `services/notify-api/TAROT.md` 为准。`TAROT_DAILY_BUDGET_MICROS` 以及输入/输出每百万 token 单价统一使用货币百万分之一，配置实际币种和价格版本；提示词版本固定于源码 `tarot-v1.0`。当前适配器只支持经验证的非推理文本模型及 OpenAI 兼容流协议，其他中转协议须先补适配。
 
+### 同日网关文档与定价补充
+
+已阅读用户提供的 [HTTP API](https://docs.ooioo.work/api/http)、[计费规则](https://docs.ooioo.work/guide/billing)和 [Key 价格保护](https://docs.ooioo.work/guide/api-key-price-protection)文档，确认现有 TypeScript fetch 使用的 Bearer、Chat Completions 与流式协议一致。文档中的长 Coding/Agent 请求超时建议不改变塔罗的既定超时；模型特有的 thinking/usage 行为仍以上述真实测试为证据。
+
+用户定价截图中“国产模型-余额”的 3.5 倍分组价为：输入 $0.525、输出 $1.75、缓存输入 $0.105、缓存写入 $0.525 / 百万 tokens；这些数字已包含倍率，不再次乘 3.5。截图没有显示模型名，作为用户提供给当前模型的报价记录，未独立核验账户账单。按美元 USD 记录，未做人民币或充值额度换算。输入/输出价格、币种与日期来源标签已保存到 API 本机忽略配置；生产配置未改动，Key 未进入 App 或 Git。
+
+内部预算按普通输入价保守计算，不预先减去缓存折扣。上次 418 输入 / 491 输出 tokens 的测试按报价约 $0.00107915，内部逐项向上取整为 $0.001080；首次请求满额预留 $0.011900，追问满额预留 $0.010150。实际扣费仍需对照网关使用日志。网关支持 Key 最高倍率保护，当前分组对应上限 3.5，但本次未修改或验证 Key 控制台设置；倍率保护也不保证模型基础单价不变。
+
+每日预算尚未由用户指定，不代填。预算、账户扣费核对、设备开通、tokenizer 上界、数据政策、生产 D1 与 Android 验收仍需完成；服务端和 App 的 AI 开关继续关闭。以上补充更新前文“价格待确认”的状态，不表示已部署或开放 AI。
+
 下文保留 2026-10-23 的问题分析与验收要求，其中“源码缺失 / 服务端未实施”描述的是当时另一台设备的状态。
 
 ## 2026-10-23 历史结论与影响
@@ -148,4 +158,4 @@ VITE_TAROT_AI_POLICY_URL=
 
 可直接复制以下任务：
 
-> 先拉取 boringHub/shiguangjian 和 boringHub/external-api，再读两边 AGENTS.md、本文及 API 的 services/notify-api/TAROT.md。2026-10-25 已找回完整邮件源码并补齐塔罗签名 SSE、恢复、purge、独立迁移、原子幂等/额度及加密缓存，后端 91 项测试和类型检查通过；生产仍是旧 Worker，TAROT D1 和真实中转配置尚未创建。下一步核对实际网关协议、非推理模型、计费、预算、设备白名单与数据政策，在隔离环境验证供应商及邮件流程，再配置真实 TAROT D1/Secret。使用要求 main 已提交并同步 GitHub 的部署脚本，记录源码 SHA 与 Worker 版本。App deckId=rws-1909，默认关闭 AI；模型和密钥只在服务器配置。完成 Android 真机流式及内容验收后再启用；不重复实现现有模块，不把旧邮件源码覆盖生产。
+> 先拉取 boringHub/shiguangjian 和 boringHub/external-api，再读两边 AGENTS.md、本文及 API 的 services/notify-api/TAROT.md。2026-10-25 已找回完整邮件源码并补齐塔罗签名 SSE、恢复、purge、独立迁移、原子幂等/额度及加密缓存，后端 92 项测试、类型检查与打包预检通过。真实中转站在显式关闭 thinking 后已通过单牌提示词流式测试；已阅读网关文档，用户截图中的 3.5 倍分组单价已录入原设备忽略配置，密钥和本机配置不会随 Git 同步。生产仍是旧 Worker，TAROT D1 和线上 Tarot 配置尚未创建。下一步由用户指定每日预算，核对实际账户扣费、tokenizer 上界、设备白名单及数据政策，在隔离环境验证完整签名供应商链路及邮件流程，再配置真实 TAROT D1/Secret。使用要求 main 已提交并同步 GitHub 的部署脚本，记录源码 SHA 与 Worker 版本。App deckId=rws-1909，默认关闭 AI；模型和密钥只在服务器配置。完成 Android 真机流式及内容验收后再启用；不重复实现现有模块，不把旧邮件源码覆盖生产。
